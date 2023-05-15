@@ -16,3 +16,9 @@ You should create a seperate user in your postgres instance to collect the metri
 ```SQL
 GRANT pg_monitor to postgres_exporter;
 ```
+
+# Integrate with Grafana
+
+You can use the dasboard [9628](https://grafana.com/grafana/dashboards/9628-postgresql-database/) to visualize the data in Grafana.
+
+![A grafana dashboard showing connection data, commits to the database and more](assets/grafana_screenshot.jpeg)

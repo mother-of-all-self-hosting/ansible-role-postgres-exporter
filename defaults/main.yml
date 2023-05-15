@@ -1,0 +1,112 @@
+---
+# Project source code URL: https://github.com/prometheus-community/postgres_exporter
+
+postgres_exporter_enabled: true
+postgres_exporter_identifier: postgres-exporter
+
+postgres_exporter_uid: ''
+postgres_exporter_gid: ''
+
+# You don't need to configure a hostname and path prefix if you're not exposing this.
+postgres_exporter_hostname: ''
+postgres_exporter_path_prefix: "/metrics/postgres-exporter"
+
+postgres_exporter_version: 0.12.0
+postgres_exporter_docker_image: "{{ postgres_exporter_docker_image_name_prefix }}bitnami/postgres-exporter:{{ postgres_exporter_version }}"
+postgres_exporter_docker_image_name_prefix: "docker.io/"
+postgres_exporter_docker_image_force_pull: "{{ postgres_exporter_docker_image.endswith(':latest') }}"
+
+
+postgres_exporter_database_hostname: ''
+postgres_exporter_database_port: 5432
+postgres_exporter_database_name: postgres_exporter
+postgres_exporter_database_username: ''
+postgres_exporter_database_password: ''
+postgres_exporter_database_ssl: true
+
+# Will be used as DATA_SOURCE_NAME
+# Format: postgresql://username:password@localhost:<port>/database_name
+postgres_exporter_db_connection_string: "postgresql://{{ postgres_exporter_database_username }}:{{ postgres_exporter_database_password }}@{{ postgres_exporter_database_hostname }}:{{ postgres_exporter_database_port }}/{{ postgres_exporter_database_name }}{{ '?sslmode=disable' if not postgres_exporter_database_ssl else '' }}"
+
+# This command will be executed on the host and can be used to execute the needed GRANT pg_monitor to postgres_exporter; from a superuser account.
+# If left empty nothing will be done (and you will need to manage the user manually)
+postgres_exporter_permission_grant_command: ""
+
+# enable basic auth
+postgres_exporter_basicauth_enabled: false
+# temporary file name on the host that runs ansible
+postgres_exporter_basicauth_file_tmp: "/tmp/ansible_htpasswd"
+# target basic auth file on the server
+postgres_exporter_basicauth_file: "{{ postgres_exporter_base_path }}/htpasswd"
+# print username and password in the play log, useful when they generated automatically
+postgres_exporter_basicauth_print: false
+# username
+postgres_exporter_basicauth_user: ''
+# password
+postgres_exporter_basicauth_password: ''
+
+# A path on host where all related files will be saved
+postgres_exporter_base_path: "/{{ postgres_exporter_identifier }}"
+
+postgres_exporter_container_network: "{{ postgres_exporter_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+#
+# Use this to expose this container to another reverse proxy, which runs in a different container network,
+# without exposing all other container services to that other reverse-proxy.
+#
+# For background, see: https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/1498
+postgres_exporter_container_additional_networks: []
+
+# A list of extra arguments to pass to the container
+postgres_exporter_container_extra_arguments: []
+
+# A list of extra arguments to pass to the node_exporter process
+#
+# Example:
+# postgres_exporter_process_extra_arguments:
+#   - "--collector.systemd"
+#   - "--collector.logind"
+#
+# Note: the above is just an example. Various collectors may require various tweaks to be able to run.
+# Running the systemd collector requires the following `postgres_exporter_process_extra_arguments`:
+# - the socket to be mounted as well (`--mount type=bind,src=/var/run/dbus/system_bus_socket,dst=/var/run/dbus/system_bus_socket,ro,bind-propagation=rslave`)
+# - (on AppArmor-based distros) disabling AppArmor protection (`--security-opt apparmor=unconfined`)
+postgres_exporter_process_extra_arguments: []
+
+# List of systemd services that postgres-exporter.service depends on
+postgres_exporter_systemd_required_services_list: ['docker.service']
+
+# List of systemd services that postgres-exporter.service wants
+postgres_exporter_systemd_wanted_services_list: []
+
+# postgres_exporter_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# See `../templates/labels.j2` for details.
+#
+# To inject your own other container labels, see `postgres_exporter_container_labels_additional_labels`.
+postgres_exporter_container_labels_traefik_enabled: "{{ true if postgres_exporter_hostname else false }}"
+postgres_exporter_container_labels_traefik_docker_network: "{{ postgres_exporter_container_network }}"
+postgres_exporter_container_labels_traefik_hostname: "{{ postgres_exporter_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/metrics`).
+postgres_exporter_container_labels_traefik_path_prefix: "{{ postgres_exporter_path_prefix }}"
+postgres_exporter_container_labels_traefik_rule: "Host(`{{ postgres_exporter_container_labels_traefik_hostname }}`) && PathPrefix(`{{ postgres_exporter_container_labels_traefik_path_prefix | quote }}`)"
+postgres_exporter_container_labels_traefik_entrypoints: web-secure
+postgres_exporter_container_labels_traefik_tls: "{{ postgres_exporter_container_labels_traefik_entrypoints != 'web' }}"
+postgres_exporter_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+
+# postgres_exporter_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# See `../templates/labels.j2` for details.
+#
+# Example:
+# postgres_exporter_container_labels_additional_labels: |
+#   my.label=1
+#   another.label="here"
+postgres_exporter_container_labels_additional_labels: ''
+
+# A port number in the container
+postgres_exporter_container_http_port: 9187
+
+# Controls whether the postgres-exporter container exposes its HTTP port (tcp/9187 in the container).
+# Takes an "<ip>:<port>" value (e.g. "127.0.0.1:9187"), just a port number or empty string to not expose.
+postgres_exporter_container_http_host_bind_port: ''

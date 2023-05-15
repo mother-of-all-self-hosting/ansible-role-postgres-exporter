@@ -1,0 +1,27 @@
+{% if postgres_exporter_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if postgres_exporter_container_labels_traefik_docker_network %}
+traefik.docker.network={{ postgres_exporter_container_labels_traefik_docker_network }}
+{% endif %}
+
+
+{# Middlewares #}
+traefik.http.middlewares.{{ postgres_exporter_identifier }}-replacepath.replacepath.path=/metrics
+{% if postgres_exporter_basicauth_enabled %}
+traefik.http.middlewares.{{ postgres_exporter_identifier }}-auth.basicauth.users={{ lookup('ansible.builtin.file', postgres_exporter_basicauth_file_tmp) }}
+{% endif %}
+
+traefik.http.routers.{{ postgres_exporter_identifier }}.rule={{ postgres_exporter_container_labels_traefik_rule }}
+traefik.http.routers.{{ postgres_exporter_identifier }}.middlewares={{ postgres_exporter_identifier }}-replacepath{% if postgres_exporter_basicauth_enabled %},{{ postgres_exporter_identifier }}-auth{% endif %}
+
+traefik.http.routers.{{ postgres_exporter_identifier }}.service={{ postgres_exporter_identifier }}
+traefik.http.routers.{{ postgres_exporter_identifier }}.tls={{ postgres_exporter_container_labels_traefik_tls | to_json }}
+{% if postgres_exporter_container_labels_traefik_tls %}
+traefik.http.routers.{{ postgres_exporter_identifier }}.tls.certResolver={{ postgres_exporter_container_labels_traefik_tls_certResolver }}
+{% endif %}
+traefik.http.routers.{{ postgres_exporter_identifier }}.entrypoints={{ postgres_exporter_container_labels_traefik_entrypoints }}
+traefik.http.services.{{ postgres_exporter_identifier }}.loadbalancer.server.port={{ postgres_exporter_container_http_port }}
+{% endif %}
+
+{{ postgres_exporter_container_labels_additional_labels }}

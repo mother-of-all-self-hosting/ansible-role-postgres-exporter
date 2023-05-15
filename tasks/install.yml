@@ -1,0 +1,80 @@
+---
+
+- name: Ensure postgres-exporter base path exists
+  ansible.builtin.file:
+    path: "{{ postgres_exporter_base_path }}"
+    state: directory
+    mode: 0700
+    owner: "{{ postgres_exporter_uid }}"
+    group: "{{ postgres_exporter_gid }}"
+
+- name: Determine basicauth tmp filename
+  set_fact:
+    postgres_exporter_basicauth_file_tmp: "{{ postgres_exporter_basicauth_file_tmp }}_{{ inventory_hostname }}"
+  when: postgres_exporter_basicauth_enabled | bool
+
+- name: Generate basic auth file
+  community.general.htpasswd:
+    path: "{{ postgres_exporter_basicauth_file_tmp }}"
+    name: "{{ postgres_exporter_basicauth_user }}"
+    password: "{{ postgres_exporter_basicauth_password }}"
+  become: false
+  delegate_to: 127.0.0.1
+  when: postgres_exporter_basicauth_enabled | bool
+
+- name: Ensure postgres-exporter labels file is created
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/labels.j2"
+    dest: "{{ postgres_exporter_base_path }}/labels"
+    owner: "{{ postgres_exporter_uid }}"
+    group: "{{ postgres_exporter_gid }}"
+    mode: 0640
+
+- name: Ensure basic auth file is saved on the server
+  ansible.builtin.copy:
+    src: "{{ postgres_exporter_basicauth_file_tmp }}"
+    dest: "{{ postgres_exporter_basicauth_file }}"
+    owner: "{{ postgres_exporter_uid }}"
+    group: "{{ postgres_exporter_gid }}"
+    mode: 0640
+  when: postgres_exporter_basicauth_enabled | bool
+
+- name: Ensure temporary basic auth file is removed
+  ansible.builtin.file:
+    path: "{{ postgres_exporter_basicauth_file_tmp }}"
+    state: absent
+  become: false
+  delegate_to: 127.0.0.1
+  when: postgres_exporter_basicauth_enabled | bool
+
+- name: Print basic auth credentials
+  debug:
+    msg: "login={{ postgres_exporter_basicauth_user }} password={{ postgres_exporter_basicauth_password }}"
+  when: postgres_exporter_basicauth_enabled | bool and postgres_exporter_basicauth_print | bool
+
+- name: Ensure postgres-exporter image is pulled
+  community.docker.docker_image:
+    name: "{{ postgres_exporter_docker_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ postgres_exporter_docker_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else postgres_exporter_docker_image_force_pull }}"
+  register: result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: result is not failed
+
+- name: Ensure postgres-exporter container network is created
+  community.general.docker_network:
+    name: "{{ postgres_exporter_container_network }}"
+    driver: bridge
+
+- name: Ensure postgres-exporter systemd service installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/postgres-exporter.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ postgres_exporter_identifier }}.service"
+    mode: 0644
+
+- name: Grant the necessary permissions to the postgres-exporter user
+  ansible.builtin.command:
+    cmd: "{{ postgres_exporter_permission_grant_command }}"
+  when: postgres_exporter_permission_grant_command | length > 0

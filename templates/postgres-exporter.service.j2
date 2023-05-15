@@ -1,0 +1,50 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=Postgres exporter {{ postgres_exporter_identifier }}
+{% for service in postgres_exporter_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+{% for service in postgres_exporter_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ postgres_exporter_identifier }} 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ postgres_exporter_identifier }} 2>/dev/null || true'
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create --rm --name {{ postgres_exporter_identifier }} \
+			--log-driver=none \
+			--user={{ postgres_exporter_uid }}:{{ postgres_exporter_gid }} \
+			--cap-drop=ALL \
+			-e DATA_SOURCE_NAME={{ postgres_exporter_db_connection_string }} \
+			--read-only \
+			{% for arg in postgres_exporter_container_extra_arguments %}
+			{{ arg }} \
+			{% endfor %}
+			--network={{ postgres_exporter_container_network }} \
+			{% if postgres_exporter_container_http_host_bind_port %}
+			-p {{ postgres_exporter_container_http_host_bind_port }}:9100 \
+			{% endif %}
+			--label-file={{ postgres_exporter_base_path }}/labels \
+			{{ postgres_exporter_docker_image }} \
+			{{ postgres_exporter_process_extra_arguments|join(' ') }}
+
+{% for network in postgres_exporter_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ postgres_exporter_identifier }}
+{% endfor %}
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ postgres_exporter_identifier }}
+
+
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ postgres_exporter_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ postgres_exporter_identifier }} 2>/dev/null || true'
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ postgres_exporter_identifier }}
+
+[Install]
+WantedBy=multi-user.target

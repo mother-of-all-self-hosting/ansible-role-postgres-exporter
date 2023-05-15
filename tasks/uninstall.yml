@@ -1,0 +1,24 @@
+---
+- name: Check existence of postgres-exporter service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ postgres_exporter_identifier }}.service"
+  register: postgres_exporter_service_stat
+
+- name: Ensure postgres-exporter is removed
+  when: postgres_exporter_service_stat.stat.exists | bool
+  block:
+    - name: Ensure postgres-exporter is stopped
+      ansible.builtin.service:
+        name: "{{ postgres_exporter_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+    - name: Ensure postgres-exporter service doesn't exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ postgres_exporter_identifier }}.service"
+        state: absent
+
+    - name: Ensure postgres-exporter base path doesn't exist
+      ansible.builtin.file:
+        path: "{{ postgres_exporter_base_path }}"
+        state: absent

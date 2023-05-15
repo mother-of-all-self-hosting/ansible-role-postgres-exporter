@@ -1,0 +1,14 @@
+---
+- name: Fail if required postgres-exporter settings not defined
+  ansible.builtin.fail:
+    msg: >-
+      You need to define a required configuration setting (`{{ item }}`).
+  when: "vars[item] == ''"
+  with_items:
+    - postgres_exporter_uid
+    - postgres_exporter_gid
+    - postgres_exporter_container_network
+    - postgres_exporter_database_hostname
+    - postgres_exporter_database_name
+    - postgres_exporter_database_username
+    - postgres_exporter_database_password

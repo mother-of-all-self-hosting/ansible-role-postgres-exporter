@@ -1,3 +1,5 @@
+**Deprecated in favor of [](https://github.com/mother-of-all-self-hosting/ansible-role-prometheus-postgres-exporter)**
+
 # Ansible Role Postgres Exporter
 
 This is an [Ansible](https://www.ansible.com/) role which installs [Postgres Exporter](https://github.com/prometheus-community/postgres_exporter) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.

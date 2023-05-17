@@ -1,4 +1,4 @@
-**Deprecated in favor of [](https://github.com/mother-of-all-self-hosting/ansible-role-prometheus-postgres-exporter)**
+**Deprecated in favor of [mother-of-all-self-hosting/ansible-role-prometheus-postgres-exporter](https://github.com/mother-of-all-self-hosting/ansible-role-prometheus-postgres-exporter)**
 
 # Ansible Role Postgres Exporter
 
